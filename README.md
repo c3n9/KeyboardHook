@@ -1,4 +1,5 @@
 # KeyboardHook
+[![NuGet](https://img.shields.io/nuget/v/KeyboardHook.svg)](https://www.nuget.org/packages/KeyboardHook/)
 
 KeyboardHook provides a cross-platform global keyboard and event simulation.
 
