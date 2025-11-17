@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="KeyboardHook.Example/KeyboardHook.Example.csproj" Id="86d050ca-2472-482d-a562-026a31f43e42" />
+  <Project Path="KeyboardHook/KeyboardHook.csproj" />
+</Solution>
