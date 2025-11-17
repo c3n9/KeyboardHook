@@ -12,7 +12,5 @@ namespace KeyboardHook.Interfaces
 
         void SendKey(KeyboardKey key);
         void SendKeyCombo(params KeyboardKey[] keys);
-
-        KeyboardKey[] GetPressedKeys();
     }
 }

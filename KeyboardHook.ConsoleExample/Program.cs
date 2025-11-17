@@ -32,23 +32,9 @@ class Program
         hook.SendKey(KeyboardKey.A);
 
         // Demonstrate sending a key combination (Ctrl+C).
-        Console.WriteLine("Sending Ctrl+C combination in 1 second...");
+        Console.WriteLine("Sending Ctrl+L combination in 1 second...");
         Thread.Sleep(1000);
-        hook.SendKeyCombo(KeyboardKey.Control, KeyboardKey.C);
-
-        Console.WriteLine("Now you can press any keys. Press Escape (Esc) in this console to stop the example.");
-
-        // Keep the application alive until the user presses Escape in this console.
-        while (true)
-        {
-            var keyInfo = Console.ReadKey(true);
-            if (keyInfo.Key == ConsoleKey.Escape)
-                break;
-
-            // Show which keys the hook currently thinks are pressed (useful for combos).
-            var pressed = hook.GetPressedKeys();
-            Console.WriteLine($"Currently pressed keys ({pressed.Length}): {string.Join(", ", pressed)}");
-        }
+        hook.SendKeyCombo(KeyboardKey.Control, KeyboardKey.L);
 
         // Unsubscribe and dispose the hook if the underlying implementation supports disposal.
         hook.KeyDown -= OnKeyDown;
