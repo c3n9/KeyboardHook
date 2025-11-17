@@ -1,4 +1,5 @@
 <Solution>
-  <Project Path="KeyboardHook.Example/KeyboardHook.Example.csproj" Id="86d050ca-2472-482d-a562-026a31f43e42" />
+  <Project Path="KeyboardHook.AvaloniaExample/KeyboardHook.AvaloniaExample.csproj" Id="7b57cf6a-a8b5-4d25-9301-e148041d572d" />
+  <Project Path="KeyboardHook.ConsoleExample/KeyboardHook.ConsoleExample.csproj" />
   <Project Path="KeyboardHook/KeyboardHook.csproj" />
 </Solution>
