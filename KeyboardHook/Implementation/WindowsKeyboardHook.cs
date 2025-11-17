@@ -15,7 +15,7 @@ namespace KeyboardHook.Implementation
         private readonly LowLevelKeyboardProc _proc;
         private readonly IntPtr _hookId;
 
-        private readonly HashSet<KeyboardKey> _pressedKeys = new HashSet<KeyboardKey>(); // для сочетаний
+        private readonly HashSet<KeyboardKey> _pressedKeys = new HashSet<KeyboardKey>();
 
         private const int WH_KEYBOARD_LL = 13;
         private const int WM_KEYDOWN = 0x0100;
@@ -69,9 +69,6 @@ namespace KeyboardHook.Implementation
             return CallNextHookEx(_hookId, nCode, wParam, lParam);
         }
 
-        /// <summary>
-        /// Возвращает копию текущих нажатых клавиш (для сочетаний)
-        /// </summary>
         public KeyboardKey[] GetPressedKeys()
         {
             var arr = new List<KeyboardKey>();
