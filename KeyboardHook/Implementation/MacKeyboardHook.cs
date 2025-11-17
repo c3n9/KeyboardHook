@@ -13,157 +13,274 @@ namespace KeyboardHook.Implementation
         public event Action<KeyboardKey> KeyUp;
 
         private Thread _runLoopThread;
-        private IntPtr _eventTap; // CFMachPortRef
-        private IntPtr _runLoopSource; // CFRunLoopSourceRef
-        private IntPtr _runLoop; // CFRunLoopRef
+        private IntPtr _eventTap;
+        private IntPtr _runLoopSource;
+        private IntPtr _runLoop;
+        private bool _disposed = false;
 
         private const int kCGEventKeyDown = 10;
         private const int kCGEventKeyUp = 11;
-        private const int kCGKeyboardEventKeycode = 0;
+        private const int kCGKeyboardEventKeycode = 9;
+
+        // Event tap locations
+        private const int kCGHIDEventTap = 0;
+        private const int kCGSessionEventTap = 1;
+        private const int kCGAnnotatedSessionEventTap = 2;
 
         public MacKeyboardHook()
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 throw new PlatformNotSupportedException("MacKeyboardHook can only be constructed on macOS");
 
-            StartEventTap();
+            InitializeEventTap();
         }
 
-        private void StartEventTap()
+        private void InitializeEventTap()
         {
-            ulong mask = (1UL << kCGEventKeyDown) | (1UL << kCGEventKeyUp);
-            _eventTap = CGEventTapCreate(0, 0, 0, mask, EventCallback, IntPtr.Zero);
+            // Try to create event tap first, it might work without explicit permissions
+            if (!TryCreateEventTap())
+            {
+                // If failed, prompt user for permissions
+                Console.WriteLine("Accessibility permissions are required for keyboard monitoring.");
+                Console.WriteLine("Please grant access in: System Preferences > Security & Privacy > Privacy > Accessibility");
+                Console.WriteLine("Then restart the application.");
+                
+                throw new InvalidOperationException(
+                    "Accessibility permissions required. " +
+                    "Please add this app to Accessibility in System Preferences and restart."
+                );
+            }
+
+            StartRunLoop();
+        }
+
+        private bool TryCreateEventTap()
+        {
+            ulong eventMask = (1UL << kCGEventKeyDown) | (1UL << kCGEventKeyUp);
+            
+            // Try different tap locations
+            int[] tapLocations = { kCGSessionEventTap, kCGHIDEventTap, kCGAnnotatedSessionEventTap };
+            
+            foreach (var tapLocation in tapLocations)
+            {
+                _eventTap = CGEventTapCreate(
+                    tapLocation,
+                    1,              // headInsert - listen to events
+                    1,              // filter events
+                    eventMask,
+                    EventCallback,
+                    IntPtr.Zero
+                );
+
+                if (_eventTap != IntPtr.Zero)
+                {
+                    Console.WriteLine($"Event tap created successfully at location: {tapLocation}");
+                    break;
+                }
+            }
+
             if (_eventTap == IntPtr.Zero)
-                throw new InvalidOperationException("Failed to create event tap. Is the application permitted to monitor input events?");
+            {
+                return false;
+            }
 
+            // Create run loop source
             _runLoopSource = CFMachPortCreateRunLoopSource(IntPtr.Zero, _eventTap, 0);
-            _runLoop = CFRunLoopGetCurrent();
+            if (_runLoopSource == IntPtr.Zero)
+            {
+                CFRelease(_eventTap);
+                _eventTap = IntPtr.Zero;
+                return false;
+            }
 
-            CFRunLoopAddSource(_runLoop, _runLoopSource, CFRunLoopMode.kCFRunLoopCommonModes);
+            // Enable the event tap
             CGEventTapEnable(_eventTap, true);
+            return true;
+        }
 
+        private void StartRunLoop()
+        {
             _runLoopThread = new Thread(RunLoopThreadProc)
             {
                 IsBackground = true,
-                Name = "MacKeyboardHook RunLoop"
+                Name = "MacKeyboardHook RunLoop",
+                Priority = ThreadPriority.AboveNormal
             };
             _runLoopThread.Start();
         }
 
         private void RunLoopThreadProc()
         {
-            // Run loop for the thread that will process events
-            CFRunLoopRun();
+            try
+            {
+                _runLoop = CFRunLoopGetCurrent();
+                
+                // Add source to run loop
+                CFRunLoopAddSource(_runLoop, _runLoopSource, kCFRunLoopCommonModes);
+                
+                Console.WriteLine("Keyboard hook run loop started");
+                CFRunLoopRun();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Run loop error: {ex.Message}");
+            }
         }
 
-        private IntPtr EventCallback(IntPtr proxy, int type, IntPtr ev, IntPtr userInfo)
+        private IntPtr EventCallback(IntPtr proxy, int type, IntPtr eventRef, IntPtr userInfo)
         {
             try
             {
                 if (type == kCGEventKeyDown || type == kCGEventKeyUp)
                 {
-                    long kc = CGEventGetIntegerValueField(ev, kCGKeyboardEventKeycode);
-                    var key = (KeyboardKey)(int)kc;
+                    var keyCode = CGEventGetIntegerValueField(eventRef, kCGKeyboardEventKeycode);
+                    var key = (KeyboardKey)keyCode;
 
                     if (type == kCGEventKeyDown)
                     {
-                        var h = KeyDown;
-                        if (h != null) h(key);
+                        KeyDown?.Invoke(key);
                     }
                     else
                     {
-                        var h = KeyUp;
-                        if (h != null) h(key);
+                        KeyUp?.Invoke(key);
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // swallow
+                Console.WriteLine($"Error in event callback: {ex.Message}");
             }
 
-            return ev;
+            return eventRef;
         }
 
         public void SendKey(KeyboardKey key)
         {
-            // Create keyboard down and up events
-            IntPtr down = CGEventCreateKeyboardEvent(IntPtr.Zero, (ushort)key, true);
-            IntPtr up = CGEventCreateKeyboardEvent(IntPtr.Zero, (ushort)key, false);
-            CGEventPost(0, down);
-            CGEventPost(0, up);
-            CFRelease(down);
-            CFRelease(up);
+            if (_disposed) throw new ObjectDisposedException(nameof(MacKeyboardHook));
+
+            IntPtr downEvent = IntPtr.Zero;
+            IntPtr upEvent = IntPtr.Zero;
+
+            try
+            {
+                downEvent = CGEventCreateKeyboardEvent(IntPtr.Zero, (ushort)key, true);
+                upEvent = CGEventCreateKeyboardEvent(IntPtr.Zero, (ushort)key, false);
+
+                if (downEvent != IntPtr.Zero)
+                    CGEventPost(kCGAnnotatedSessionEventTap, downEvent);
+                
+                if (upEvent != IntPtr.Zero)
+                    CGEventPost(kCGAnnotatedSessionEventTap, upEvent);
+            }
+            finally
+            {
+                if (downEvent != IntPtr.Zero)
+                    CFRelease(downEvent);
+                if (upEvent != IntPtr.Zero)
+                    CFRelease(upEvent);
+            }
         }
 
         public void SendKeyCombo(params KeyboardKey[] keys)
         {
+            if (_disposed) throw new ObjectDisposedException(nameof(MacKeyboardHook));
+            if (keys == null || keys.Length == 0) return;
+
             var events = new List<IntPtr>();
+
             try
             {
-                // key down in order
-                foreach (var k in keys)
+                // Key down in order
+                foreach (var key in keys)
                 {
-                    var e = CGEventCreateKeyboardEvent(IntPtr.Zero, (ushort)k, true);
-                    events.Add(e);
-                    CGEventPost(0, e);
+                    var evt = CGEventCreateKeyboardEvent(IntPtr.Zero, (ushort)key, true);
+                    if (evt != IntPtr.Zero)
+                    {
+                        events.Add(evt);
+                        CGEventPost(kCGAnnotatedSessionEventTap, evt);
+                        Thread.Sleep(10);
+                    }
                 }
 
-                // key up in reverse order
+                // Key up in reverse order
                 for (int i = keys.Length - 1; i >= 0; i--)
                 {
-                    var e = CGEventCreateKeyboardEvent(IntPtr.Zero, (ushort)keys[i], false);
-                    events.Add(e);
-                    CGEventPost(0, e);
+                    var evt = CGEventCreateKeyboardEvent(IntPtr.Zero, (ushort)keys[i], false);
+                    if (evt != IntPtr.Zero)
+                    {
+                        events.Add(evt);
+                        CGEventPost(kCGAnnotatedSessionEventTap, evt);
+                        Thread.Sleep(10);
+                    }
                 }
             }
             finally
             {
-                foreach (var e in events)
-                    CFRelease(e);
+                foreach (var evt in events)
+                {
+                    if (evt != IntPtr.Zero)
+                        CFRelease(evt);
+                }
             }
         }
 
         public KeyboardKey[] GetPressedKeys()
         {
-            // macOS does not provide a simple global keymap like X11 here; returning empty array.
-            return new KeyboardKey[0];
+            return Array.Empty<KeyboardKey>();
         }
 
         public void Dispose()
         {
+            if (_disposed) return;
+
             try
             {
+                Console.WriteLine("Disposing keyboard hook...");
+
+                // Stop the run loop
+                if (_runLoop != IntPtr.Zero)
+                {
+                    CFRunLoopStop(_runLoop);
+                }
+
+                // Disable and invalidate event tap
                 if (_eventTap != IntPtr.Zero)
                 {
                     CGEventTapEnable(_eventTap, false);
                     CFMachPortInvalidate(_eventTap);
-                    _eventTap = IntPtr.Zero;
+                    CFRelease(_eventTap);
                 }
 
-                if (_runLoop != IntPtr.Zero)
-                {
-                    CFRunLoopStop(_runLoop);
-                    _runLoop = IntPtr.Zero;
-                }
-
+                // Clean up run loop source
                 if (_runLoopSource != IntPtr.Zero)
                 {
                     CFRelease(_runLoopSource);
-                    _runLoopSource = IntPtr.Zero;
                 }
 
+                // Wait for thread to finish
                 if (_runLoopThread != null && _runLoopThread.IsAlive)
                 {
-                    _runLoopThread.Join(500);
+                    if (!_runLoopThread.Join(1000))
+                    {
+                        Console.WriteLine("Run loop thread did not exit gracefully");
+                    }
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"Error during disposal: {ex.Message}");
+            }
+            finally
+            {
+                _eventTap = IntPtr.Zero;
+                _runLoopSource = IntPtr.Zero;
+                _runLoop = IntPtr.Zero;
+                _runLoopThread = null;
+                _disposed = true;
             }
         }
 
-        #region PInvoke
+        #region PInvoke Declarations
 
         private delegate IntPtr CGEventTapCallBack(IntPtr proxy, int type, IntPtr ev, IntPtr userInfo);
 
@@ -191,16 +308,6 @@ namespace KeyboardHook.Implementation
         [DllImport("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")]
         private static extern IntPtr CFRunLoopGetCurrent();
 
-        private static class CFRunLoopMode
-        {
-            public static IntPtr kCFRunLoopCommonModes = (IntPtr)0; // not used as CF types in PInvoke; placeholder
-        }
-
-        private static class CFRunLoopModeString
-        {
-            // placeholder
-        }
-
         [DllImport("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")]
         private static extern void CFRunLoopAddSource(IntPtr rl, IntPtr source, IntPtr mode);
 
@@ -212,6 +319,25 @@ namespace KeyboardHook.Implementation
 
         [DllImport("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")]
         private static extern void CFRelease(IntPtr cf);
+
+        // Run loop modes - use the correct constant
+        private static readonly IntPtr kCFRunLoopCommonModes = GetCFRunLoopCommonModes();
+
+        private static IntPtr GetCFRunLoopCommonModes()
+        {
+            // Try to get the actual constant value
+            try
+            {
+                return CFStringCreateWithCString(IntPtr.Zero, "kCFRunLoopCommonModes", 0x0600);
+            }
+            catch
+            {
+                return IntPtr.Zero;
+            }
+        }
+
+        [DllImport("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")]
+        private static extern IntPtr CFStringCreateWithCString(IntPtr alloc, string str, uint encoding);
 
         #endregion
     }
