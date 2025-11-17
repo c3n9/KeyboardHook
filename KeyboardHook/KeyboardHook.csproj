@@ -2,6 +2,27 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>KeyboardHook</Title>
+    <Company>c3n9</Company>
+    <Description>KeyboardHook provides a cross-platform global keyboard and event simulation.</Description>
+    <PackageProjectUrl></PackageProjectUrl>
+    <Copyright>https://github.com/c3n9/KeyboardHook/blob/master/LICENSE</Copyright>
+    <RepositoryUrl>https://github.com/c3n9/KeyboardHook</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <Authors>c3n9</Authors>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
 </Project>
