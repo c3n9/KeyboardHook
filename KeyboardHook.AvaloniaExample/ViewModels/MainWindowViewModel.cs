@@ -16,7 +16,7 @@ namespace KeyboardHook.AvaloniaExample.ViewModels
             IKeyboardHook keyboardHook = KeyboardHookFactory.Create();
 
             keyboardHook.KeyDown += KeyboardHook_KeyDown;
-            keyboardHook.KeyUp += KeyboardHook_KeyUp; ;
+            keyboardHook.KeyUp += KeyboardHook_KeyUp;
         }
 
         private void KeyboardHook_KeyUp(Enums.KeyboardKey key)
