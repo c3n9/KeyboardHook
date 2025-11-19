@@ -13,7 +13,12 @@
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<Authors>c3n9</Authors>
+		<ApplicationIcon>Assets\icon_keyboardhook.ico</ApplicationIcon>
 	</PropertyGroup>
+
+	<ItemGroup>
+	  <Content Include="Assets\icon_keyboardhook.ico" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<None Include="..\LICENSE">
