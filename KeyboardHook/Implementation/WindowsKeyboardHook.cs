@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using KeyboardHook.Extensions;
 
 namespace KeyboardHook.Implementation
 {
@@ -50,7 +51,7 @@ namespace KeyboardHook.Implementation
             {
                 var kb = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
                 int vkCode = kb.vkCode;
-                var key = (KeyboardKey)vkCode;
+                var key = KeyboardKeyExtensions.FromPlatformCode(vkCode);
 
                 if (wParam == (IntPtr)WM_KEYDOWN || wParam == (IntPtr)WM_SYSKEYDOWN)
                 {

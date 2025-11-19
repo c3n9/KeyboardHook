@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFramework>net8.0</TargetFramework>
-		<VersionPrefix>1.1.2</VersionPrefix>
+		<VersionPrefix>1.1.3</VersionPrefix>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Title>KeyboardHook</Title>
 		<Company>c3n9</Company>

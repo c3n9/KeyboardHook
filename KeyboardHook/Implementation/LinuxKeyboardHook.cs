@@ -1,5 +1,6 @@
-﻿using KeyboardHook.Interfaces;
-using KeyboardHook.Enums;
+﻿using KeyboardHook.Enums;
+using KeyboardHook.Extensions;
+using KeyboardHook.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -88,7 +89,7 @@ namespace KeyboardHook.Implementation
                         bool wasPressed = (previous & (1 << bit)) != 0;
                         bool isPressed = (current & (1 << bit)) != 0;
                         int keyCode = i * 8 + bit;
-                        var key = (KeyboardKey)keyCode;
+                        var key = KeyboardKeyExtensions.FromPlatformCode(keyCode);
 
                         if (isPressed && !wasPressed)
                         {
