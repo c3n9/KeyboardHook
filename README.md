@@ -7,10 +7,10 @@ KeyboardHook provides a cross-platform global keyboard and event simulation.
 
 |               | Windows | macOS | Linux (only X11) |
 |---------------|:-------:|:-----:|:----------------:|
-| **x86**       | Yes     | N/A   | No               |
+| **x86**       | Yes     | N/A   | N/A              |
 | **x64**       | Yes     | N/A   | Yes              |
-| **Arm32**     | N/A     | N/A   | Yes              |
-| **Arm64**     | Yes     | N/A   | Yes              |
+| **Arm32**     | N/A     | N/A   | N/A              |
+| **Arm64**     | N/A     | N/A   | N/A              |
 
 ## Global Hooks
 
