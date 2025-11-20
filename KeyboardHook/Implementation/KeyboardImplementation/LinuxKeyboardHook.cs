@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 
-namespace KeyboardHook.Implementation
+namespace KeyboardHook.Implementation.KeyboardImplementation
 {
     internal class LinuxKeyboardHook : IKeyboardHook, IDisposable
     {

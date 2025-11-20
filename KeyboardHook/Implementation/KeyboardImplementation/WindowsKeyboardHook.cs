@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using KeyboardHook.Extensions;
 
-namespace KeyboardHook.Implementation
+namespace KeyboardHook.Implementation.KeyboardImplementation
 {
     internal class WindowsKeyboardHook : IKeyboardHook, IDisposable
     {
