@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
-		<VersionPrefix>1.1.4</VersionPrefix>
+		<TargetFramework>netstandard2.0</TargetFramework>
+		<VersionPrefix>1.1.5</VersionPrefix>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Title>KeyboardHook</Title>
 		<Company>c3n9</Company>
