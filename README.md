@@ -16,7 +16,7 @@ KeyboardHook provides a cross-platform global keyboard and event simulation.
 
 KeyboardHook provides the IKeyboardHook interface. Here's a basic usage example:
 
-```
+```csharp 
 
     IKeyboardHook keyboardHook = KeyboardHookFactory.Create();
 
@@ -34,5 +34,21 @@ KeyboardHook provides the IKeyboardHook interface. Here's a basic usage example:
     {
         KeyDownStr = key.ToString();
     }
+    
+```
+
+## Emulate keystrokes
+
+You can emulate keystrokes using SendKey and SendKeyCombo. Here's a basic usage example:
+
+```csharp 
+
+    IKeyboardHook hook = KeyboardHookFactory.Create();
+
+    // Demonstrate sending a single key programmatically.
+    hook.SendKey(KeyboardKey.A);
+
+    // Demonstrate sending a key combination (Ctrl+C).
+    hook.SendKeyCombo(KeyboardKey.LControl, KeyboardKey.L);
     
 ```
