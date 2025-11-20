@@ -18,6 +18,7 @@
     <StackPanel>
         <TextBlock Text="{Binding KeyDownStr, StringFormat='Key down event result:{0}'}"/>
         <TextBlock Text="{Binding KeyUpStr, StringFormat='Key up event result:{0}'}"/>
+        <Button Content="Send system button" Command="{Binding SystemButtonSendCommand}"/>
     </StackPanel>
 
 </Window>

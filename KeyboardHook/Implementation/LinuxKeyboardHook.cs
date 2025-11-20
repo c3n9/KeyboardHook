@@ -110,8 +110,8 @@ namespace KeyboardHook.Implementation
 
         public void SendKey(KeyboardKey key)
         {
-            XTestFakeKeyEvent(_display, (uint)key, true, 0);
-            XTestFakeKeyEvent(_display, (uint)key, false, 0);
+            XTestFakeKeyEvent(_display, (uint)KeyboardKeyExtensions.ToPlatformCode(key), true, 0);
+            XTestFakeKeyEvent(_display, (uint)KeyboardKeyExtensions.ToPlatformCode(key), false, 0);
             XFlush(_display);
         }
 
@@ -119,12 +119,12 @@ namespace KeyboardHook.Implementation
         {
             foreach (var keyCode in keyCodes)
             {
-                XTestFakeKeyEvent(_display, (uint)keyCode, true, 0);
+                XTestFakeKeyEvent(_display, (uint)KeyboardKeyExtensions.ToPlatformCode(keyCode), true, 0);
             }
 
             for (int i = keyCodes.Length - 1; i >= 0; i--)
             {
-                XTestFakeKeyEvent(_display, (uint)keyCodes[i], false, 0);
+                XTestFakeKeyEvent(_display, (uint)KeyboardKeyExtensions.ToPlatformCode(keyCodes[i]), false, 0);
             }
 
             XFlush(_display);

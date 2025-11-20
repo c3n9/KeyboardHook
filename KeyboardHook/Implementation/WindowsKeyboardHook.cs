@@ -80,7 +80,7 @@ namespace KeyboardHook.Implementation
 
         public void SendKey(KeyboardKey key)
         {
-            var keyCode = (int)key;
+            var keyCode = KeyboardKeyExtensions.ToPlatformCode(key);
             keybd_event((byte)keyCode, 0, 0, UIntPtr.Zero);
             keybd_event((byte)keyCode, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
         }
@@ -88,10 +88,10 @@ namespace KeyboardHook.Implementation
         public void SendKeyCombo(params KeyboardKey[] keyCodes)
         {
             foreach (var k in keyCodes)
-                keybd_event((byte)(int)k, 0, 0, UIntPtr.Zero);
+                keybd_event((byte)KeyboardKeyExtensions.ToPlatformCode(k), 0, 0, UIntPtr.Zero);
 
             for (int i = keyCodes.Length - 1; i >= 0; i--)
-                keybd_event((byte)(int)keyCodes[i], 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+                keybd_event((byte)KeyboardKeyExtensions.ToPlatformCode(keyCodes[i]), 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
         }
 
         public void Dispose()

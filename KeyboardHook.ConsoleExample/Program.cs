@@ -34,7 +34,7 @@ class Program
         // Demonstrate sending a key combination (Ctrl+C).
         Console.WriteLine("Sending Ctrl+L combination in 1 second...");
         Thread.Sleep(1000);
-        hook.SendKeyCombo(KeyboardKey.Control, KeyboardKey.L);
+        hook.SendKeyCombo(KeyboardKey.LControl, KeyboardKey.L);
 
         // Unsubscribe and dispose the hook if the underlying implementation supports disposal.
         hook.KeyDown -= OnKeyDown;
