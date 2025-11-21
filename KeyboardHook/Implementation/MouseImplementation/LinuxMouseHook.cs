@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace KeyboardHook.Implementation.MouseImplementation
 {
@@ -16,6 +17,7 @@ namespace KeyboardHook.Implementation.MouseImplementation
         private Thread _eventThread;
         private bool _running;
         private readonly HashSet<MouseButton> _pressed = new HashSet<MouseButton>();
+        private readonly object _syncRoot = new object();
 
         public LinuxMouseHook()
         {
@@ -26,7 +28,7 @@ namespace KeyboardHook.Implementation.MouseImplementation
             InitXInput2();
 
             _running = true;
-            _eventThread = new Thread(EventLoop) { IsBackground = true };
+            _eventThread = new Thread(EventLoop) { IsBackground = true, Name = "LinuxMouseHook" };
             _eventThread.Start();
         }
 
@@ -39,13 +41,14 @@ namespace KeyboardHook.Implementation.MouseImplementation
 
             XIEventMask mask = new XIEventMask();
             mask.deviceid = XIAllMasterDevices;
-            mask.mask_len = 1;
-            mask.mask = Marshal.AllocHGlobal(1);
+            mask.mask_len = XIMaskLen(XI_ButtonPress);
+            mask.mask = Marshal.AllocHGlobal(mask.mask_len);
 
-            byte[] maskBytes = new byte[1];
-            maskBytes[0] = (byte)((1 << XI_ButtonPress) | (1 << XI_ButtonRelease));
+            byte[] maskBytes = new byte[mask.mask_len];
+            XISetMask(maskBytes, XI_ButtonPress);
+            XISetMask(maskBytes, XI_ButtonRelease);
 
-            Marshal.Copy(maskBytes, 0, mask.mask, 1);
+            Marshal.Copy(maskBytes, 0, mask.mask, mask.mask_len);
 
             int rootWinInt = XDefaultRootWindow(_display);
             IntPtr rootWin = new IntPtr(rootWinInt);
@@ -62,26 +65,33 @@ namespace KeyboardHook.Implementation.MouseImplementation
 
             while (_running)
             {
-                XNextEvent(_display, ref ev);
-
-                if (ev.type == GenericEvent)
+                try
                 {
-                    XGenericEventCookie cookie = ev.XGenericEventCookie;
+                    XNextEvent(_display, ref ev);
 
-                    if (XGetEventData(_display, ref cookie) != 0)
+                    if (ev.type == GenericEvent)
                     {
-                        try
+                        XGenericEventCookie cookie = ev.XGenericEventCookie;
+
+                        if (XGetEventData(_display, ref cookie) != 0)
                         {
-                            if (cookie.evtype == XI_ButtonPress)
-                                HandleButton(true, cookie);
-                            else if (cookie.evtype == XI_ButtonRelease)
-                                HandleButton(false, cookie);
-                        }
-                        finally
-                        {
-                            XFreeEventData(_display, ref cookie);
+                            try
+                            {
+                                if (cookie.evtype == XI_ButtonPress)
+                                    HandleButton(true, cookie);
+                                else if (cookie.evtype == XI_ButtonRelease)
+                                    HandleButton(false, cookie);
+                            }
+                            finally
+                            {
+                                XFreeEventData(_display, ref cookie);
+                            }
                         }
                     }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Error in mouse hook event loop: {ex.Message}");
                 }
             }
         }
@@ -92,16 +102,32 @@ namespace KeyboardHook.Implementation.MouseImplementation
             MouseButton? b = ConvertButton(btn);
             if (!b.HasValue) return;
 
-            if (isPress)
+            lock (_syncRoot)
             {
-                _pressed.Add(b.Value);
-                if (ButtonDown != null) ButtonDown(b.Value);
+                if (isPress)
+                {
+                    _pressed.Add(b.Value);
+                }
+                else
+                {
+                    _pressed.Remove(b.Value);
+                }
             }
-            else
+
+            Task.Run(() =>
             {
-                _pressed.Remove(b.Value);
-                if (ButtonUp != null) ButtonUp(b.Value);
-            }
+                try
+                {
+                    if (isPress)
+                        ButtonDown?.Invoke(b.Value);
+                    else
+                        ButtonUp?.Invoke(b.Value);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Error in mouse hook event handler: {ex.Message}");
+                }
+            });
         }
 
         private int GetButton(XGenericEventCookie cookie)
@@ -115,19 +141,27 @@ namespace KeyboardHook.Implementation.MouseImplementation
 
         private MouseButton? ConvertButton(int btn)
         {
-            if (btn == 1) return MouseButton.Left;
-            if (btn == 2) return MouseButton.Middle;
-            if (btn == 3) return MouseButton.Right;
-            if (btn == 8) return MouseButton.X1;
-            if (btn == 9) return MouseButton.X2;
-            return null;
+            switch (btn)
+            {
+                case 1: return MouseButton.Left;
+                case 2: return MouseButton.Middle;
+                case 3: return MouseButton.Right;
+                case 8: return MouseButton.X1;
+                case 9: return MouseButton.X2;
+                case 4: return MouseButton.WheelUp;
+                case 5: return MouseButton.WheelDown;
+                default: return null;
+            }
         }
 
         public MouseButton[] GetPressedButtons()
         {
-            MouseButton[] arr = new MouseButton[_pressed.Count];
-            _pressed.CopyTo(arr);
-            return arr;
+            lock (_syncRoot)
+            {
+                MouseButton[] arr = new MouseButton[_pressed.Count];
+                _pressed.CopyTo(arr);
+                return arr;
+            }
         }
 
         public void SendButton(MouseButton button)
@@ -149,13 +183,16 @@ namespace KeyboardHook.Implementation.MouseImplementation
         {
             int code = 0;
 
-            if (btn == MouseButton.Left) code = 1;
-            else if (btn == MouseButton.Middle) code = 2;
-            else if (btn == MouseButton.Right) code = 3;
-            else if (btn == MouseButton.X1) code = 8;
-            else if (btn == MouseButton.X2) code = 9;
-            else if (btn == MouseButton.WheelUp) code = 4;
-            else if (btn == MouseButton.WheelDown) code = 5;
+            switch (btn)
+            {
+                case MouseButton.Left: code = 1; break;
+                case MouseButton.Middle: code = 2; break;
+                case MouseButton.Right: code = 3; break;
+                case MouseButton.X1: code = 8; break;
+                case MouseButton.X2: code = 9; break;
+                case MouseButton.WheelUp: code = 4; break;
+                case MouseButton.WheelDown: code = 5; break;
+            }
 
             if (code == 0) return;
 
@@ -166,15 +203,36 @@ namespace KeyboardHook.Implementation.MouseImplementation
         public void Dispose()
         {
             _running = false;
-            Thread.Sleep(30);
+            
+            if (_eventThread != null && _eventThread.IsAlive)
+            {
+                if (!_eventThread.Join(1000))
+                {
+                    _eventThread.Abort();
+                }
+            }
+
             if (_display != IntPtr.Zero)
+            {
                 XCloseDisplay(_display);
+                _display = IntPtr.Zero;
+            }
         }
 
         private const int GenericEvent = 35;
         private const int XI_ButtonPress = 3;
         private const int XI_ButtonRelease = 4;
         private const int XIAllMasterDevices = 1;
+
+        private static int XIMaskLen(int eventType)
+        {
+            return (eventType + 7) / 8;
+        }
+
+        private static void XISetMask(byte[] mask, int eventType)
+        {
+            mask[eventType / 8] |= (byte)(1 << (eventType % 8));
+        }
 
         [StructLayout(LayoutKind.Sequential)]
         private struct XIEventMask
@@ -188,7 +246,8 @@ namespace KeyboardHook.Implementation.MouseImplementation
         private struct XEvent
         {
             public int type;
-            private long p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18, p19, p20, p21, p22, p23;
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 24)]
+            private long[] padding;
             public XGenericEventCookie XGenericEventCookie;
         }
 
@@ -218,36 +277,49 @@ namespace KeyboardHook.Implementation.MouseImplementation
             public int deviceid;
             public int sourceid;
             public int detail;
+            public int root;
+            public int @event;
+            public int child;
+            public double root_x;
+            public double root_y;
+            public double event_x;
+            public double event_y;
+            public int flags;
+            public int button_mask;
+            public int valuator_mask;
+            public int group;
+            public int mods;
+            public IntPtr valuators;
         }
 
-        [DllImport("X11")]
+        [DllImport("libX11.so.6")]
         private static extern IntPtr XOpenDisplay(IntPtr display);
 
-        [DllImport("X11")]
+        [DllImport("libX11.so.6")]
         private static extern void XCloseDisplay(IntPtr display);
 
-        [DllImport("X11")]
+        [DllImport("libX11.so.6")]
         private static extern int XDefaultRootWindow(IntPtr display);
 
-        [DllImport("X11")]
+        [DllImport("libX11.so.6")]
         private static extern void XNextEvent(IntPtr display, ref XEvent ev);
 
-        [DllImport("X11")]
+        [DllImport("libX11.so.6")]
         private static extern void XFlush(IntPtr display);
 
-        [DllImport("Xi")]
+        [DllImport("libXi.so.6")]
         private static extern int XISelectEvents(IntPtr display, IntPtr win, ref XIEventMask mask, int num_masks);
 
-        [DllImport("Xi")]
+        [DllImport("libXi.so.6")]
         private static extern int XQueryExtension(IntPtr display, string name, out int opcode, out int event_base, out int error_base);
 
-        [DllImport("X11")]
+        [DllImport("libX11.so.6")]
         private static extern int XGetEventData(IntPtr display, ref XGenericEventCookie cookie);
 
-        [DllImport("X11")]
+        [DllImport("libX11.so.6")]
         private static extern void XFreeEventData(IntPtr display, ref XGenericEventCookie cookie);
 
-        [DllImport("Xtst")]
+        [DllImport("libXtst.so.6")]
         private static extern void XTestFakeButtonEvent(IntPtr display, uint button, int is_press, ulong delay);
     }
 }

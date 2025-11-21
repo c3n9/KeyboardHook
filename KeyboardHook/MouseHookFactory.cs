@@ -16,7 +16,7 @@ namespace KeyboardHook
             }
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                throw new PlatformNotSupportedException("Unsupported platform");
+                return new Implementation.MouseImplementation.LinuxMouseHook();
             }
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
