@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-namespace KeyboardHook.Implementation
+namespace KeyboardHook.Implementation.KeyboardImplementation
 {
     internal class MacKeyboardHook : IKeyboardHook, IDisposable
     {

@@ -1,7 +1,7 @@
 # KeyboardHook
 [![NuGet](https://img.shields.io/nuget/v/KeyboardHook.svg)](https://www.nuget.org/packages/KeyboardHook/)
 
-KeyboardHook provides a cross-platform global keyboard and event simulation.
+KeyboardHook provides a cross-platform global hook for keyboard, mouse and event simulation.
 
 ## Supported Platforms
 
@@ -37,12 +37,35 @@ KeyboardHook provides the IKeyboardHook interface. Here's a basic usage example:
     
 ```
 
-## Emulate keystrokes
-
-You can emulate keystrokes using SendKey and SendKeyCombo. Here's a basic usage example:
+KeyboardHook provides the IMouseHook interface. Here's a basic usage example
 
 ```csharp 
 
+    IMouseHook _mouseHook = MouseHookFactory.Create();
+
+    _mouseHook.ButtonUp += _mouseHook_ButtonUp;
+    _mouseHook.ButtonDown += _mouseHook_ButtonDown;
+
+    .........................................................
+
+    private void _mouseHook_ButtonDown(MouseButton btn)
+    {
+        MouseButtonDownStr = btn.ToString();
+    }
+
+    private void _mouseHook_ButtonUp(Enums.MouseButton btn)
+    {
+        MouseButtonUpStr = btn.ToString();
+    }
+
+```
+
+## Emulate keystrokes and mouse buttons
+
+You can emulate keystrokes using SendKey and SendKeyCombo. Here is a basic example of using keyboard emulation:
+
+```csharp 
+    
     IKeyboardHook hook = KeyboardHookFactory.Create();
 
     // Demonstrate sending a single key programmatically.
@@ -52,3 +75,19 @@ You can emulate keystrokes using SendKey and SendKeyCombo. Here's a basic usage 
     hook.SendKeyCombo(KeyboardKey.LControl, KeyboardKey.L);
     
 ```
+
+Here is a basic example of using mouse button emulation:
+
+```csharp 
+    
+    IMouseHook hook = KeyboardHookFactory.Create();
+
+    // Demonstrate sending a single mouse button programmatically.
+    hook.SendButton(MouseButton.Left);
+
+    // Demonstrate sending a double left click programmatically.
+    hook.SendButton(MouseButton.Left, MouseButton.Left);
+    
+```
+
+The library is experimental, if you suddenly have any questions or problems, write an issue or make a fork.

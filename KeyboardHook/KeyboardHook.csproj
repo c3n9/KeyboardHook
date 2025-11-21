@@ -2,11 +2,11 @@
 
 	<PropertyGroup>
 		<TargetFramework>netstandard2.0</TargetFramework>
-		<VersionPrefix>1.1.5</VersionPrefix>
+		<VersionPrefix>1.2.0</VersionPrefix>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Title>KeyboardHook</Title>
 		<Company>c3n9</Company>
-		<Description>KeyboardHook provides a cross-platform global keyboard and event simulation.</Description>
+		<Description>KeyboardHook provides a cross-platform global hook for keyboard, mouse and event simulation.</Description>
 		<PackageProjectUrl>https://www.nuget.org/packages/KeyboardHook</PackageProjectUrl>
 		<Copyright>https://github.com/c3n9/KeyboardHook/blob/master/LICENSE</Copyright>
 		<RepositoryUrl>https://github.com/c3n9/KeyboardHook</RepositoryUrl>
@@ -15,6 +15,7 @@
 		<Authors>c3n9</Authors>
 		<ApplicationIcon>Assets\icon_keyboardhook.ico</ApplicationIcon>
 		<PackageIcon>Assets\icon_keyboardhook.png</PackageIcon>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 
 	<ItemGroup>
