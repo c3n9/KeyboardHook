@@ -15,6 +15,7 @@
 		<Authors>c3n9</Authors>
 		<ApplicationIcon>Assets\icon_keyboardhook.ico</ApplicationIcon>
 		<PackageIcon>Assets\icon_keyboardhook.png</PackageIcon>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 
 	<ItemGroup>
