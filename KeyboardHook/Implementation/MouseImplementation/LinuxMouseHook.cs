@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace KeyboardHook.Implementation.MouseImplementation
 {
@@ -14,10 +13,37 @@ namespace KeyboardHook.Implementation.MouseImplementation
         public event Action<MouseButton> ButtonUp;
 
         private IntPtr _display;
-        private Thread _eventThread;
+        private Thread _pollThread;
         private bool _running;
-        private readonly HashSet<MouseButton> _pressed = new HashSet<MouseButton>();
-        private readonly object _syncRoot = new object();
+
+        private int _prevMask = 0;
+
+        [DllImport("libX11.so.6")]
+        private static extern IntPtr XOpenDisplay(IntPtr display);
+
+        [DllImport("libX11.so.6")]
+        private static extern int XCloseDisplay(IntPtr display);
+
+        [DllImport("libX11.so.6")]
+        private static extern bool XQueryPointer(
+            IntPtr display,
+            IntPtr window,
+            out IntPtr root_return,
+            out IntPtr child_return,
+            out int root_x_return,
+            out int root_y_return,
+            out int win_x_return,
+            out int win_y_return,
+            out uint mask_return);
+
+        [DllImport("libX11.so.6")]
+        private static extern IntPtr XDefaultRootWindow(IntPtr display);
+
+        [DllImport("libXtst.so.6")]
+        private static extern void XTestFakeButtonEvent(IntPtr display, uint button, bool is_press, ulong delay);
+
+        [DllImport("libX11.so.6")]
+        private static extern void XFlush(IntPtr display);
 
         public LinuxMouseHook()
         {
@@ -25,192 +51,114 @@ namespace KeyboardHook.Implementation.MouseImplementation
             if (_display == IntPtr.Zero)
                 throw new Exception("Cannot open X11 display");
 
-            InitXInput2();
-
             _running = true;
-            _eventThread = new Thread(EventLoop) { IsBackground = true, Name = "LinuxMouseHook" };
-            _eventThread.Start();
+            _pollThread = new Thread(PollLoop)
+            {
+                IsBackground = true,
+                Name = "Mouse Poll Thread"
+            };
+            _pollThread.Start();
         }
 
-        private void InitXInput2()
+        private void PollLoop()
         {
-            int opcode, eventBase, errorBase;
-
-            if (XQueryExtension(_display, "XInputExtension", out opcode, out eventBase, out errorBase) == 0)
-                throw new Exception("XInput2 not available");
-
-            XIEventMask mask = new XIEventMask();
-            mask.deviceid = XIAllMasterDevices;
-            mask.mask_len = XIMaskLen(XI_ButtonPress);
-            mask.mask = Marshal.AllocHGlobal(mask.mask_len);
-
-            byte[] maskBytes = new byte[mask.mask_len];
-            XISetMask(maskBytes, XI_ButtonPress);
-            XISetMask(maskBytes, XI_ButtonRelease);
-
-            Marshal.Copy(maskBytes, 0, mask.mask, mask.mask_len);
-
-            int rootWinInt = XDefaultRootWindow(_display);
-            IntPtr rootWin = new IntPtr(rootWinInt);
-
-            XISelectEvents(_display, rootWin, ref mask, 1);
-            XFlush(_display);
-
-            Marshal.FreeHGlobal(mask.mask);
-        }
-
-        private void EventLoop()
-        {
-            XEvent ev = new XEvent();
+            IntPtr root = XDefaultRootWindow(_display);
 
             while (_running)
             {
-                try
-                {
-                    XNextEvent(_display, ref ev);
+                XQueryPointer(
+                    _display,
+                    root,
+                    out _,
+                    out _,
+                    out _,
+                    out _,
+                    out _,
+                    out _,
+                    out uint mask);
 
-                    if (ev.type == GenericEvent)
-                    {
-                        XGenericEventCookie cookie = ev.XGenericEventCookie;
+                int curMask = (int)mask;
 
-                        if (XGetEventData(_display, ref cookie) != 0)
-                        {
-                            try
-                            {
-                                if (cookie.evtype == XI_ButtonPress)
-                                    HandleButton(true, cookie);
-                                else if (cookie.evtype == XI_ButtonRelease)
-                                    HandleButton(false, cookie);
-                            }
-                            finally
-                            {
-                                XFreeEventData(_display, ref cookie);
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Error in mouse hook event loop: {ex.Message}");
-                }
+                ProcessMask(curMask);
+
+                Thread.Sleep(5); 
             }
         }
 
-        private void HandleButton(bool isPress, XGenericEventCookie cookie)
+        private void ProcessMask(int curMask)
         {
-            int btn = GetButton(cookie);
-            MouseButton? b = ConvertButton(btn);
-            if (!b.HasValue) return;
+            Console.WriteLine(curMask);
+            
+            Check(MouseButton.Left, curMask, _prevMask, 1 << 8);
+            Check(MouseButton.Middle, curMask, _prevMask, 1 << 9);
+            Check(MouseButton.Right, curMask, _prevMask, 1 << 10);
+            
 
-            lock (_syncRoot)
-            {
-                if (isPress)
-                {
-                    _pressed.Add(b.Value);
-                }
-                else
-                {
-                    _pressed.Remove(b.Value);
-                }
-            }
-
-            Task.Run(() =>
-            {
-                try
-                {
-                    if (isPress)
-                        ButtonDown?.Invoke(b.Value);
-                    else
-                        ButtonUp?.Invoke(b.Value);
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Error in mouse hook event handler: {ex.Message}");
-                }
-            });
+            _prevMask = curMask;
         }
 
-        private int GetButton(XGenericEventCookie cookie)
+        private void Check(MouseButton btn, int cur, int prev, int bit)
         {
-            unsafe
-            {
-                XIDeviceEvent* d = (XIDeviceEvent*)cookie.data.ToPointer();
-                return d->detail;
-            }
-        }
+            bool was = (prev & bit) != 0;
+            bool now = (cur & bit) != 0;
 
-        private MouseButton? ConvertButton(int btn)
-        {
-            switch (btn)
-            {
-                case 1: return MouseButton.Left;
-                case 2: return MouseButton.Middle;
-                case 3: return MouseButton.Right;
-                case 8: return MouseButton.X1;
-                case 9: return MouseButton.X2;
-                case 4: return MouseButton.WheelUp;
-                case 5: return MouseButton.WheelDown;
-                default: return null;
-            }
+            if (!was && now) ButtonDown?.Invoke(btn);
+            if (was && !now) ButtonUp?.Invoke(btn);
         }
 
         public MouseButton[] GetPressedButtons()
         {
-            lock (_syncRoot)
-            {
-                MouseButton[] arr = new MouseButton[_pressed.Count];
-                _pressed.CopyTo(arr);
-                return arr;
-            }
+            List<MouseButton> list = new List<MouseButton>();
+
+            if ((_prevMask & (1 << 8)) != 0) list.Add(MouseButton.Left);
+            if ((_prevMask & (1 << 9)) != 0) list.Add(MouseButton.Middle);
+            if ((_prevMask & (1 << 10)) != 0) list.Add(MouseButton.Right);
+            if ((_prevMask & (1 << 11)) != 0) list.Add(MouseButton.X1);
+            if ((_prevMask & (1 << 12)) != 0) list.Add(MouseButton.X2);
+
+            return list.ToArray();
         }
 
         public void SendButton(MouseButton button)
         {
-            Send(button, true);
-            Send(button, false);
+            int code = ButtonToX(button);
+            if (code == 0) return;
+
+            XTestFakeButtonEvent(_display, (uint)code, true, 0);
+            XTestFakeButtonEvent(_display, (uint)code, false, 0);
+            XFlush(_display);
         }
 
         public void SendButtonCombo(params MouseButton[] buttons)
         {
-            for (int i = 0; i < buttons.Length; i++)
-                Send(buttons[i], true);
+            foreach (var b in buttons)
+                XTestFakeButtonEvent(_display, (uint)ButtonToX(b), true, 0);
 
             for (int i = buttons.Length - 1; i >= 0; i--)
-                Send(buttons[i], false);
+                XTestFakeButtonEvent(_display, (uint)ButtonToX(buttons[i]), false, 0);
+
+            XFlush(_display);
         }
 
-        private void Send(MouseButton btn, bool down)
+        private int ButtonToX(MouseButton btn)
         {
-            int code = 0;
-
             switch (btn)
             {
-                case MouseButton.Left: code = 1; break;
-                case MouseButton.Middle: code = 2; break;
-                case MouseButton.Right: code = 3; break;
-                case MouseButton.X1: code = 8; break;
-                case MouseButton.X2: code = 9; break;
-                case MouseButton.WheelUp: code = 4; break;
-                case MouseButton.WheelDown: code = 5; break;
+                case MouseButton.Left: return 1;
+                case MouseButton.Middle: return 2;
+                case MouseButton.Right: return 3;
+                case MouseButton.X1: return 8;
+                case MouseButton.X2: return 9;
+                case MouseButton.WheelUp: return 4;
+                case MouseButton.WheelDown: return 5;
+                default: return 0;
             }
-
-            if (code == 0) return;
-
-            XTestFakeButtonEvent(_display, (uint)code, down ? 1 : 0, 0);
-            XFlush(_display);
         }
 
         public void Dispose()
         {
             _running = false;
-            
-            if (_eventThread != null && _eventThread.IsAlive)
-            {
-                if (!_eventThread.Join(1000))
-                {
-                    _eventThread.Abort();
-                }
-            }
+            _pollThread?.Join(1000);
 
             if (_display != IntPtr.Zero)
             {
@@ -218,108 +166,5 @@ namespace KeyboardHook.Implementation.MouseImplementation
                 _display = IntPtr.Zero;
             }
         }
-
-        private const int GenericEvent = 35;
-        private const int XI_ButtonPress = 3;
-        private const int XI_ButtonRelease = 4;
-        private const int XIAllMasterDevices = 1;
-
-        private static int XIMaskLen(int eventType)
-        {
-            return (eventType + 7) / 8;
-        }
-
-        private static void XISetMask(byte[] mask, int eventType)
-        {
-            mask[eventType / 8] |= (byte)(1 << (eventType % 8));
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct XIEventMask
-        {
-            public int deviceid;
-            public int mask_len;
-            public IntPtr mask;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct XEvent
-        {
-            public int type;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 24)]
-            private long[] padding;
-            public XGenericEventCookie XGenericEventCookie;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct XGenericEventCookie
-        {
-            public int type;
-            public uint serial;
-            public int send_event;
-            public IntPtr display;
-            public int extension;
-            public int evtype;
-            public int cookie;
-            public IntPtr data;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private unsafe struct XIDeviceEvent
-        {
-            public int type;
-            public IntPtr serial;
-            public int send_event;
-            public IntPtr display;
-            public int extension;
-            public int evtype;
-            public int time;
-            public int deviceid;
-            public int sourceid;
-            public int detail;
-            public int root;
-            public int @event;
-            public int child;
-            public double root_x;
-            public double root_y;
-            public double event_x;
-            public double event_y;
-            public int flags;
-            public int button_mask;
-            public int valuator_mask;
-            public int group;
-            public int mods;
-            public IntPtr valuators;
-        }
-
-        [DllImport("libX11.so.6")]
-        private static extern IntPtr XOpenDisplay(IntPtr display);
-
-        [DllImport("libX11.so.6")]
-        private static extern void XCloseDisplay(IntPtr display);
-
-        [DllImport("libX11.so.6")]
-        private static extern int XDefaultRootWindow(IntPtr display);
-
-        [DllImport("libX11.so.6")]
-        private static extern void XNextEvent(IntPtr display, ref XEvent ev);
-
-        [DllImport("libX11.so.6")]
-        private static extern void XFlush(IntPtr display);
-
-        [DllImport("libXi.so.6")]
-        private static extern int XISelectEvents(IntPtr display, IntPtr win, ref XIEventMask mask, int num_masks);
-
-        [DllImport("libXi.so.6")]
-        private static extern int XQueryExtension(IntPtr display, string name, out int opcode, out int event_base, out int error_base);
-
-        [DllImport("libX11.so.6")]
-        private static extern int XGetEventData(IntPtr display, ref XGenericEventCookie cookie);
-
-        [DllImport("libX11.so.6")]
-        private static extern void XFreeEventData(IntPtr display, ref XGenericEventCookie cookie);
-
-        [DllImport("libXtst.so.6")]
-        private static extern void XTestFakeButtonEvent(IntPtr display, uint button, int is_press, ulong delay);
     }
 }
