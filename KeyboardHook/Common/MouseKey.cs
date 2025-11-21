@@ -9,9 +9,10 @@ namespace KeyboardHook.Enums
         Left,
         Right,
         Middle,
-        X1,
-        X2,
-        WheelUp,
-        WheelDown,
+        // Work only in windows
+        // X1,
+        // X2,
+        // WheelUp,
+        // WheelDown,
     }
 }

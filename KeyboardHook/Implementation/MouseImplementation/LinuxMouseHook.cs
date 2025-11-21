@@ -87,8 +87,6 @@ namespace KeyboardHook.Implementation.MouseImplementation
 
         private void ProcessMask(int curMask)
         {
-            Console.WriteLine(curMask);
-            
             Check(MouseButton.Left, curMask, _prevMask, 1 << 8);
             Check(MouseButton.Middle, curMask, _prevMask, 1 << 9);
             Check(MouseButton.Right, curMask, _prevMask, 1 << 10);
@@ -113,8 +111,6 @@ namespace KeyboardHook.Implementation.MouseImplementation
             if ((_prevMask & (1 << 8)) != 0) list.Add(MouseButton.Left);
             if ((_prevMask & (1 << 9)) != 0) list.Add(MouseButton.Middle);
             if ((_prevMask & (1 << 10)) != 0) list.Add(MouseButton.Right);
-            if ((_prevMask & (1 << 11)) != 0) list.Add(MouseButton.X1);
-            if ((_prevMask & (1 << 12)) != 0) list.Add(MouseButton.X2);
 
             return list.ToArray();
         }
@@ -147,10 +143,6 @@ namespace KeyboardHook.Implementation.MouseImplementation
                 case MouseButton.Left: return 1;
                 case MouseButton.Middle: return 2;
                 case MouseButton.Right: return 3;
-                case MouseButton.X1: return 8;
-                case MouseButton.X2: return 9;
-                case MouseButton.WheelUp: return 4;
-                case MouseButton.WheelDown: return 5;
                 default: return 0;
             }
         }
