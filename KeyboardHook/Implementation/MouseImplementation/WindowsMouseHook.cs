@@ -58,11 +58,11 @@ namespace KeyboardHook.Implementation.MouseImplementation
                     int delta = (short)((info.mouseData >> 16) & 0xffff);
                     if (delta > 0)
                     {
-                        btn = MouseButton.WheelUp;
+                        //btn = MouseButton.WheelUp;
                     }
                     else
                     {
-                        btn = MouseButton.WheelDown;
+                        //btn = MouseButton.WheelDown;
                     }
 
                     if (btn.HasValue)
@@ -96,21 +96,21 @@ namespace KeyboardHook.Implementation.MouseImplementation
                         case WM_MBUTTONUP:
                             btn = MouseButton.Middle;
                             break;
-                        case WM_XBUTTONDOWN:
-                        case WM_XBUTTONUP:
-                            {
-                                MSLLHOOKSTRUCT info = (MSLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(MSLLHOOKSTRUCT));
-                                int xbtn = (info.mouseData >> 16) & 0xffff;
-                                if (xbtn == 1)
-                                {
-                                    btn = MouseButton.X1;
-                                }
-                                else if (xbtn == 2)
-                                {
-                                    btn = MouseButton.X2;
-                                }
-                            }
-                            break;
+                        //case WM_XBUTTONDOWN:
+                        //case WM_XBUTTONUP:
+                        //    {
+                        //        MSLLHOOKSTRUCT info = (MSLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(MSLLHOOKSTRUCT));
+                        //        int xbtn = (info.mouseData >> 16) & 0xffff;
+                        //        if (xbtn == 1)
+                        //        {
+                        //            btn = MouseButton.X1;
+                        //        }
+                        //        else if (xbtn == 2)
+                        //        {
+                        //            btn = MouseButton.X2;
+                        //        }
+                        //    }
+                        //    break;
                     }
 
                     if (btn.HasValue)
@@ -197,26 +197,26 @@ namespace KeyboardHook.Implementation.MouseImplementation
                 down = MOUSEEVENTF_MIDDLEDOWN;
                 up = MOUSEEVENTF_MIDDLEUP;
             }
-            else if (btn == MouseButton.X1)
-            {
-                down = MOUSEEVENTF_XDOWN;
-                up = MOUSEEVENTF_XUP;
-            }
-            else if (btn == MouseButton.X2)
-            {
-                down = MOUSEEVENTF_XDOWN;
-                up = MOUSEEVENTF_XUP;
-            }
-            else if (btn == MouseButton.WheelUp)
-            {
-                down = MOUSEEVENTF_WHEEL;
-                up = 0;
-            }
-            else if (btn == MouseButton.WheelDown)
-            {
-                down = MOUSEEVENTF_WHEEL;
-                up = 0;
-            }
+            //else if (btn == MouseButton.X1)
+            //{
+            //    down = MOUSEEVENTF_XDOWN;
+            //    up = MOUSEEVENTF_XUP;
+            //}
+            //else if (btn == MouseButton.X2)
+            //{
+            //    down = MOUSEEVENTF_XDOWN;
+            //    up = MOUSEEVENTF_XUP;
+            //}
+            //else if (btn == MouseButton.WheelUp)
+            //{
+            //    down = MOUSEEVENTF_WHEEL;
+            //    up = 0;
+            //}
+            //else if (btn == MouseButton.WheelDown)
+            //{
+            //    down = MOUSEEVENTF_WHEEL;
+            //    up = 0;
+            //}
         }
 
         public void Dispose()
