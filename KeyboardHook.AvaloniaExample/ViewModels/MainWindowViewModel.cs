@@ -19,7 +19,7 @@ namespace KeyboardHook.AvaloniaExample.ViewModels
         [RelayCommand]
         private void SystemButtonSend()
         {
-            _keyboardHook.SendKey(KeyboardKey.F12);
+            _keyboardHook.SendKey(KeyboardKey.B);
         }
 
         [RelayCommand]

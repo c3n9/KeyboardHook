@@ -57,7 +57,7 @@ namespace KeyboardHook.Implementation.KeyboardImplementation
             
             _eventTap = CGEventTapCreate(
                 kCGSessionEventTap,
-                0, // HeadInsert
+                1, // HeadInsert
                 1, // Options: Default
                 eventMask,
                 _callbackKeepAlive,
@@ -133,8 +133,8 @@ namespace KeyboardHook.Implementation.KeyboardImplementation
 
             try
             {
-                downEvent = CGEventCreateKeyboardEvent(IntPtr.Zero, (ushort)key, true);
-                upEvent = CGEventCreateKeyboardEvent(IntPtr.Zero, (ushort)key, false);
+                downEvent = CGEventCreateKeyboardEvent(IntPtr.Zero, (ushort)KeyboardKeyExtensions.ToPlatformCode(key), true);
+                upEvent = CGEventCreateKeyboardEvent(IntPtr.Zero, (ushort)KeyboardKeyExtensions.ToPlatformCode(key), false);
 
                 if (downEvent != IntPtr.Zero)
                     CGEventPost(kCGAnnotatedSessionEventTap, downEvent);
@@ -219,7 +219,7 @@ namespace KeyboardHook.Implementation.KeyboardImplementation
             }
         }
 
-        #region P/Invoke и получение констант
+        #region PInvoke Declarations
         
         private static IntPtr GetCFRunLoopCommonModes()
         {
