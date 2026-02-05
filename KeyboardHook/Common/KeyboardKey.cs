@@ -11,14 +11,17 @@ namespace KeyboardHook.Enums
         // Control keys
         [WindowsCode(0x08)]
         [LinuxCode(22)]
+        [MacosCode(51)]
         Backspace,
 
         [WindowsCode(0x09)]
         [LinuxCode(23)]
+        [MacosCode(48)]
         Tab,
 
         [WindowsCode(0x0D)]
         [LinuxCode(36)]
+        [MacosCode(36)]
         Enter,
 
         [WindowsCode(0x13)]
@@ -27,47 +30,59 @@ namespace KeyboardHook.Enums
 
         [WindowsCode(0x14)]
         [LinuxCode(66)]
+        [MacosCode(57)]
         CapsLock,
 
         [WindowsCode(0x1B)]
         [LinuxCode(9)]
+        [MacosCode(53)]
         Escape,
 
         [WindowsCode(0x20)]
         [LinuxCode(65)]
+        [MacosCode(49)]
         Space,
 
         // Navigation
         [WindowsCode(0x21)]
         [LinuxCode(112)]
+        [MacosCode(116)]
         PageUp,
 
         [WindowsCode(0x22)]
         [LinuxCode(117)]
+        [MacosCode(121)]
         PageDown,
 
         [WindowsCode(0x23)]
         [LinuxCode(115)]
+        [MacosCode(119)]
         End,
 
         [WindowsCode(0x24)]
         [LinuxCode(110)]
+        [MacosCode(115)]
         Home,
 
         [WindowsCode(0x25)]
         [LinuxCode(113)]
+        [MacosCode(123)]
+
         Left,
 
         [WindowsCode(0x26)]
         [LinuxCode(111)]
+        [MacosCode(126)]
         Up,
 
         [WindowsCode(0x27)]
         [LinuxCode(114)]
+        [MacosCode(124)]
         Right,
 
         [WindowsCode(0x28)]
         [LinuxCode(116)]
+        [MacosCode(125)]
         Down,
 
         [WindowsCode(0x2C)]
@@ -76,156 +91,197 @@ namespace KeyboardHook.Enums
 
         [WindowsCode(0x2D)]
         [LinuxCode(118)]
+        [MacosCode(114)]
         Insert,
 
         [WindowsCode(0x2E)]
         [LinuxCode(119)]
+        [MacosCode(117)]
         Delete,
 
         // Digits
         [WindowsCode(0x30)]
         [LinuxCode(19)]
+        [MacosCode(29)]
         D0,
 
         [WindowsCode(0x31)]
         [LinuxCode(10)]
+        [MacosCode(18)]
         D1,
 
         [WindowsCode(0x32)]
         [LinuxCode(11)]
+        [MacosCode(19)]
         D2,
 
         [WindowsCode(0x33)]
         [LinuxCode(12)]
+        [MacosCode(20)]
         D3,
 
         [WindowsCode(0x34)]
         [LinuxCode(13)]
+        [MacosCode(21)]
+
         D4,
 
         [WindowsCode(0x35)]
         [LinuxCode(14)]
+        [MacosCode(23)]
         D5,
 
         [WindowsCode(0x36)]
         [LinuxCode(15)]
+        [MacosCode(22)]
         D6,
 
         [WindowsCode(0x37)]
         [LinuxCode(16)]
+        [MacosCode(26)]
         D7,
 
         [WindowsCode(0x38)]
         [LinuxCode(17)]
+        [MacosCode(28)]
         D8,
 
         [WindowsCode(0x39)]
         [LinuxCode(18)]
+        [MacosCode(25)]
         D9,
 
         // Letters
         [WindowsCode(0x41)]
         [LinuxCode(38)]
+        [MacosCode(0)]
         A,
 
         [WindowsCode(0x42)]
         [LinuxCode(56)]
+        [MacosCode(11)]
         B,
 
         [WindowsCode(0x43)]
         [LinuxCode(54)]
+        [MacosCode(8)]
+
         C,
 
         [WindowsCode(0x44)]
         [LinuxCode(40)]
+        [MacosCode(2)]
+
         D,
 
         [WindowsCode(0x45)]
         [LinuxCode(26)]
+        [MacosCode(14)]
         E,
 
         [WindowsCode(0x46)]
         [LinuxCode(41)]
+        [MacosCode(3)]
         F,
 
         [WindowsCode(0x47)]
         [LinuxCode(42)]
+        [MacosCode(5)]
         G,
 
         [WindowsCode(0x48)]
         [LinuxCode(43)]
+        [MacosCode(4)]
         H,
 
         [WindowsCode(0x49)]
         [LinuxCode(31)]
+        [MacosCode(34)]
         I,
 
         [WindowsCode(0x4A)]
         [LinuxCode(44)]
+        [MacosCode(38)]
         J,
 
         [WindowsCode(0x4B)]
         [LinuxCode(45)]
+        [MacosCode(40)]
         K,
 
         [WindowsCode(0x4C)]
         [LinuxCode(46)]
+        [MacosCode(37)]
         L,
 
         [WindowsCode(0x4D)]
         [LinuxCode(58)]
+        [MacosCode(46)]
         M,
 
         [WindowsCode(0x4E)]
         [LinuxCode(57)]
+        [MacosCode(45)]
         N,
 
         [WindowsCode(0x4F)]
         [LinuxCode(32)]
+        [MacosCode(31)]
         O,
 
         [WindowsCode(0x50)]
         [LinuxCode(33)]
+        [MacosCode(35)]
         P,
 
         [WindowsCode(0x51)]
         [LinuxCode(24)]
+        [MacosCode(12)]
         Q,
 
         [WindowsCode(0x52)]
         [LinuxCode(27)]
+        [MacosCode(15)]
         R,
 
         [WindowsCode(0x53)]
         [LinuxCode(39)]
+        [MacosCode(1)]
         S,
 
         [WindowsCode(0x54)]
         [LinuxCode(28)]
+        [MacosCode(17)]
         T,
 
         [WindowsCode(0x55)]
         [LinuxCode(30)]
+        [MacosCode(32)]
         U,
 
         [WindowsCode(0x56)]
         [LinuxCode(55)]
+        [MacosCode(9)]
         V,
 
         [WindowsCode(0x57)]
         [LinuxCode(25)]
+        [MacosCode(13)]
         W,
 
         [WindowsCode(0x58)]
         [LinuxCode(53)]
+        [MacosCode(7)]
         X,
 
         [WindowsCode(0x59)]
         [LinuxCode(29)]
+        [MacosCode(16)]
         Y,
 
         [WindowsCode(0x5A)]
         [LinuxCode(52)]
+        [MacosCode(6)]
         Z,
 
         // Windows keys
@@ -309,50 +365,63 @@ namespace KeyboardHook.Enums
         // Function keys
         [WindowsCode(0x70)]
         [LinuxCode(67)]
+        [MacosCode(122)]
+
         F1,
 
         [WindowsCode(0x71)]
         [LinuxCode(68)]
+        [MacosCode(120)]
         F2,
 
         [WindowsCode(0x72)]
         [LinuxCode(69)]
+        [MacosCode(99)]
         F3,
 
         [WindowsCode(0x73)]
         [LinuxCode(70)]
+        [MacosCode(118)]
         F4,
 
         [WindowsCode(0x74)]
         [LinuxCode(71)]
+        [MacosCode(96)]
         F5,
 
         [WindowsCode(0x75)]
         [LinuxCode(72)]
+        [MacosCode(97)]
         F6,
 
         [WindowsCode(0x76)]
         [LinuxCode(73)]
+        [MacosCode(98)]
         F7,
 
         [WindowsCode(0x77)]
         [LinuxCode(74)]
+        [MacosCode(100)]
         F8,
 
         [WindowsCode(0x78)]
         [LinuxCode(75)]
+        [MacosCode(101)]
         F9,
 
         [WindowsCode(0x79)]
         [LinuxCode(76)]
+        [MacosCode(109)]
         F10,
 
         [WindowsCode(0x7A)]
         [LinuxCode(95)]
+        [MacosCode(110)]
         F11,
 
         [WindowsCode(0x7B)]
         [LinuxCode(96)]
+        [MacosCode(111)]
         F12,
 
         [WindowsCode(0x7C)]

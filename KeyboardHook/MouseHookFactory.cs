@@ -20,7 +20,7 @@ namespace KeyboardHook
             }
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                throw new PlatformNotSupportedException("Unsupported platform");
+                
             }
 
             throw new PlatformNotSupportedException("Unsupported platform");
