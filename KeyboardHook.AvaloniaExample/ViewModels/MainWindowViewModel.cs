@@ -8,7 +8,7 @@ namespace KeyboardHook.AvaloniaExample.ViewModels
     public partial class MainWindowViewModel : ViewModelBase
     {
         private readonly IKeyboardHook _keyboardHook;
-        //private readonly IMouseHook _mouseHook;
+        private readonly IMouseHook _mouseHook;
 
         [ObservableProperty]
         private string _keyDownStr;
@@ -25,16 +25,16 @@ namespace KeyboardHook.AvaloniaExample.ViewModels
         [RelayCommand]
         private void LeftMouseButtonSend()
         {
-            //_mouseHook.SendButton(MouseButton.Left);
+            _mouseHook.SendButton(MouseButton.Left);
         }
 
         public MainWindowViewModel()
         {
             _keyboardHook = KeyboardHookFactory.Create();
-            //_mouseHook = MouseHookFactory.Create();
+            _mouseHook = MouseHookFactory.Create();
 
-            //_mouseHook.ButtonUp += _mouseHook_ButtonUp;
-            //_mouseHook.ButtonDown += _mouseHook_ButtonDown;
+            _mouseHook.ButtonUp += _mouseHook_ButtonUp;
+            _mouseHook.ButtonDown += _mouseHook_ButtonDown;
 
             _keyboardHook.KeyDown += KeyboardHook_KeyDown;
             _keyboardHook.KeyUp += KeyboardHook_KeyUp;

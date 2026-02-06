@@ -20,7 +20,7 @@ namespace KeyboardHook
             }
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                
+                return new Implementation.MouseImplementation.MacMouseHook();
             }
 
             throw new PlatformNotSupportedException("Unsupported platform");
