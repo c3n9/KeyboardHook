@@ -14,6 +14,8 @@ namespace KeyboardHook.Extensions
                 return GetWindowsCode(key);
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 return GetLinuxCode(key);
+            else if(RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                return GetMacOsCode(key);
             else
                 return 0;
         }
@@ -39,7 +41,9 @@ namespace KeyboardHook.Extensions
                 }
                 else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 {
-                    // TODO
+                    var attr = field.GetCustomAttribute<MacosCodeAttribute>();
+                    if (attr?.Code == platformCode)
+                        return (KeyboardKey)field.GetValue(null);
                 }
             }
             return KeyboardKey.None;
@@ -56,6 +60,12 @@ namespace KeyboardHook.Extensions
         {
             var field = typeof(KeyboardKey).GetField(key.ToString());
             var attr = field?.GetCustomAttribute<LinuxCodeAttribute>();
+            return attr?.Code ?? 0;
+        }
+        private static int GetMacOsCode(KeyboardKey key)
+        {
+            var field = typeof(KeyboardKey).GetField(key.ToString());
+            var attr = field?.GetCustomAttribute<MacosCodeAttribute>();
             return attr?.Code ?? 0;
         }
     }

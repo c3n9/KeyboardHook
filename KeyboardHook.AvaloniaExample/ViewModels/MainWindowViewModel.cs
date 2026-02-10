@@ -19,7 +19,7 @@ namespace KeyboardHook.AvaloniaExample.ViewModels
         [RelayCommand]
         private void SystemButtonSend()
         {
-            _keyboardHook.SendKey(KeyboardKey.LWin);
+            _keyboardHook.SendKey(KeyboardKey.Tab);
         }
 
         [RelayCommand]
@@ -31,7 +31,6 @@ namespace KeyboardHook.AvaloniaExample.ViewModels
         public MainWindowViewModel()
         {
             _keyboardHook = KeyboardHookFactory.Create();
-
             _mouseHook = MouseHookFactory.Create();
 
             _mouseHook.ButtonUp += _mouseHook_ButtonUp;
