@@ -162,8 +162,7 @@ namespace KeyboardHook.Implementation.MouseImplementation
                     return;
             }
 
-            // Можно передовать координаты курсора, пока (0,0)
-            var point = new CGPoint() { X = 0, Y = 0 };
+            var point = GetCurrentMousePosition();
 
             var evtDown = CGEventCreateMouseEvent(IntPtr.Zero, downType, point, nativeButton);
             CGEventPost(CGEventTapLocation.kCGHIDEventTap, evtDown);
@@ -172,6 +171,17 @@ namespace KeyboardHook.Implementation.MouseImplementation
             var evtUp = CGEventCreateMouseEvent(IntPtr.Zero, upType, point, nativeButton);
             CGEventPost(CGEventTapLocation.kCGHIDEventTap, evtUp);
             CFRelease(evtUp);
+        }
+        
+        private CGPoint GetCurrentMousePosition()
+        {
+            var currentEvent = CGEventCreate(IntPtr.Zero);
+            if (currentEvent == IntPtr.Zero)
+                return new CGPoint() { X = 0, Y = 0 };
+    
+            var location = CGEventGetLocation(currentEvent);
+            CFRelease(currentEvent);
+            return location;
         }
 
         public void SendButtonCombo(params MouseButton[] buttons)
@@ -281,6 +291,12 @@ namespace KeyboardHook.Implementation.MouseImplementation
         [DllImport(CoreFoundationLib)]
         private static extern IntPtr CFStringCreateWithCString(IntPtr alloc, string cStr, int encoding);
 
+        [DllImport(CoreGraphicsLib)]
+        private static extern IntPtr CGEventCreate(IntPtr source);
+
+        [DllImport(CoreGraphicsLib)]
+        private static extern CGPoint CGEventGetLocation(IntPtr evt);
+        
         #endregion
     }
 }
