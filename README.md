@@ -10,7 +10,7 @@ KeyboardHook provides a cross-platform global hook for keyboard, mouse and event
 | **x86**       | Yes     | N/A   | N/A              |
 | **x64**       | Yes     | N/A   | Yes              |
 | **Arm32**     | N/A     | N/A   | N/A              |
-| **Arm64**     | N/A     | N/A   | N/A              |
+| **Arm64**     | N/A     | Yes   | N/A              |
 
 ## Global Hooks
 
