@@ -3,9 +3,7 @@ using KeyboardHook.Extensions;
 using KeyboardHook.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 
 namespace KeyboardHook.Implementation.KeyboardImplementation
@@ -15,12 +13,16 @@ namespace KeyboardHook.Implementation.KeyboardImplementation
         public event Action<KeyboardKey> KeyDown;
         public event Action<KeyboardKey> KeyUp;
 
-        private IntPtr _display;
+        private IntPtr _sendDisplay;   
+        private IntPtr _pollingDisplay; 
         private Thread _eventThread;
         private bool _running;
         private byte[] _previousKeys = new byte[32];
 
         #region X11 imports
+
+        [DllImport("libX11.so.6")]
+        private static extern int XInitThreads(); 
 
         [DllImport("libX11.so.6")]
         private static extern IntPtr XOpenDisplay(IntPtr display);
@@ -39,17 +41,25 @@ namespace KeyboardHook.Implementation.KeyboardImplementation
 
         #endregion
 
+        static LinuxKeyboardHook()
+        {
+            XInitThreads();
+        }
+
         public LinuxKeyboardHook()
         {
-            _display = XOpenDisplay(IntPtr.Zero);
-            if (_display == IntPtr.Zero)
-                throw new Exception("Couldn't open X Display");
+            _sendDisplay = XOpenDisplay(IntPtr.Zero);
+            _pollingDisplay = XOpenDisplay(IntPtr.Zero);
+
+            if (_sendDisplay == IntPtr.Zero || _pollingDisplay == IntPtr.Zero)
+                throw new Exception("Не удалось открыть X Display. Проверьте переменную DISPLAY.");
 
             _running = true;
             _eventThread = new Thread(KeymapPollingLoop)
             {
                 IsBackground = true,
-                Name = "Keyboard Polling Thread"
+                Name = "Keyboard Polling Thread",
+                Priority = ThreadPriority.AboveNormal 
             };
             _eventThread.Start();
         }
@@ -61,15 +71,16 @@ namespace KeyboardHook.Implementation.KeyboardImplementation
                 try
                 {
                     byte[] currentKeys = new byte[32];
-                    if (XQueryKeymap(_display, currentKeys))
+                    if (XQueryKeymap(_pollingDisplay, currentKeys))
                     {
                         ProcessKeymapChanges(currentKeys);
                     }
-                    Thread.Sleep(16); // ~60 FPS
+
+                    Thread.Sleep(16);
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Polling error: {ex.Message}");
+                    Console.WriteLine($"[KeyboardHook] Polling error: {ex.Message}");
                     Thread.Sleep(100);
                 }
             }
@@ -79,81 +90,63 @@ namespace KeyboardHook.Implementation.KeyboardImplementation
         {
             for (int i = 0; i < 32; i++)
             {
-                byte current = currentKeys[i];
-                byte previous = _previousKeys[i];
-
-                if (current != previous)
+                if (currentKeys[i] != _previousKeys[i])
                 {
                     for (int bit = 0; bit < 8; bit++)
                     {
-                        bool wasPressed = (previous & (1 << bit)) != 0;
-                        bool isPressed = (current & (1 << bit)) != 0;
-                        int keyCode = i * 8 + bit;
-                        var key = KeyboardKeyExtensions.FromPlatformCode(keyCode);
+                        bool wasPressed = (_previousKeys[i] & (1 << bit)) != 0;
+                        bool isPressed = (currentKeys[i] & (1 << bit)) != 0;
 
-                        if (isPressed && !wasPressed)
+                        if (isPressed != wasPressed)
                         {
-                            var handler = KeyDown;
-                            if (handler != null) handler(key);
-                        }
-                        else if (!isPressed && wasPressed)
-                        {
-                            var handler = KeyUp;
-                            if (handler != null) handler(key);
+                            int keyCode = i * 8 + bit;
+                            var key = KeyboardKeyExtensions.FromPlatformCode(keyCode);
+
+                            if (isPressed)
+                                KeyDown?.Invoke(key);
+                            else
+                                KeyUp?.Invoke(key);
                         }
                     }
                 }
             }
-
             Array.Copy(currentKeys, _previousKeys, 32);
         }
 
         public void SendKey(KeyboardKey key)
         {
-            XTestFakeKeyEvent(_display, (uint)KeyboardKeyExtensions.ToPlatformCode(key), true, 0);
-            XTestFakeKeyEvent(_display, (uint)KeyboardKeyExtensions.ToPlatformCode(key), false, 0);
-            XFlush(_display);
+            uint code = (uint)KeyboardKeyExtensions.ToPlatformCode(key);
+            XTestFakeKeyEvent(_sendDisplay, code, true, 0);
+            XTestFakeKeyEvent(_sendDisplay, code, false, 0);
+            XFlush(_sendDisplay);
         }
 
         public void SendKeyCombo(params KeyboardKey[] keyCodes)
         {
-            foreach (var keyCode in keyCodes)
-            {
-                XTestFakeKeyEvent(_display, (uint)KeyboardKeyExtensions.ToPlatformCode(keyCode), true, 0);
-            }
+            foreach (var key in keyCodes)
+                XTestFakeKeyEvent(_sendDisplay, (uint)KeyboardKeyExtensions.ToPlatformCode(key), true, 0);
 
             for (int i = keyCodes.Length - 1; i >= 0; i--)
-            {
-                XTestFakeKeyEvent(_display, (uint)KeyboardKeyExtensions.ToPlatformCode(keyCodes[i]), false, 0);
-            }
+                XTestFakeKeyEvent(_sendDisplay, (uint)KeyboardKeyExtensions.ToPlatformCode(keyCodes[i]), false, 0);
 
-            XFlush(_display);
-        }
-
-        public KeyboardKey[] GetPressedKeys()
-        {
-            var list = new List<KeyboardKey>();
-            for (int i = 0; i < _previousKeys.Length; i++)
-            {
-                byte b = _previousKeys[i];
-                for (int bit = 0; bit < 8; bit++)
-                {
-                    if ((b & (1 << bit)) != 0)
-                        list.Add((KeyboardKey)(i * 8 + bit));
-                }
-            }
-            return list.ToArray();
+            XFlush(_sendDisplay);
         }
 
         public void Dispose()
         {
             _running = false;
-            _eventThread?.Join(1000);
+            _eventThread?.Join(500);
 
-            if (_display != IntPtr.Zero)
+            if (_sendDisplay != IntPtr.Zero)
             {
-                XCloseDisplay(_display);
-                _display = IntPtr.Zero;
+                XCloseDisplay(_sendDisplay);
+                _sendDisplay = IntPtr.Zero;
+            }
+
+            if (_pollingDisplay != IntPtr.Zero)
+            {
+                XCloseDisplay(_pollingDisplay);
+                _pollingDisplay = IntPtr.Zero;
             }
         }
     }
