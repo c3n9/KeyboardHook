@@ -139,7 +139,7 @@ namespace KeyboardHook.Implementation.KeyboardImplementation
                 for (int bit = 0; bit < 8; bit++)
                 {
                     if ((b & (1 << bit)) != 0)
-                        list.Add((KeyboardKey)(i * 8 + bit));
+                        list.Add(KeyboardKeyExtensions.FromPlatformCode(i * 8 + bit));
                 }
             }
             return list.ToArray();
